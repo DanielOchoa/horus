@@ -7,6 +7,8 @@ import (
     "io/ioutil"
     "log"
     "os"
+    // local
+    "horus/utils"
 )
 // Part One.
 // Horus
@@ -18,8 +20,9 @@ import (
 //   1. Send text alert of currency to list of available phones.
 
 const (
-    gdaxUrl = "https://api.gdax.com"
-    currenciesPath = "/currencies"
+    gdaxUrl              = "https://api.gdax.com"
+    currenciesPath       = "/currencies"
+    cachedCurrenciesPath = "/data/currencies.json"
 )
 
 //
@@ -40,10 +43,19 @@ type Currencies struct {
 
 
 func main() {
-    requestGdaxCurrencies(currenciesPath)
+    // freshCurrencies vs cachedCurrencies
+    _ = requestGdaxCurrencies(currenciesPath)
+    gopath := utils.GetGoPath()
+    cachedCurrencies := getCachedCurrencies(gopath + cachedCurrenciesPath)
+    fmt.Println("Now showing cached ones...")
+    json.NewEncoder(os.Stdout).Encode(cachedCurrencies.Collection)
+    // we only need id and/or name to check.
+    // walk through each freshCurrency and check against matching pair in cached currencies. If we can't find a
+    // match, we have a new currency in gdax.
+
 }
 
-func requestGdaxCurrencies(path string) {
+func requestGdaxCurrencies(path string) Currencies {
     fmt.Printf("Horus: Requesting %s...\n", path)
     res, getErr := http.Get(gdaxUrl + path)
     if getErr != nil {
@@ -52,26 +64,30 @@ func requestGdaxCurrencies(path string) {
     }
     defer res.Body.Close()
 
-    body, _      := ioutil.ReadAll(res.Body)
-    currencies   := Currencies{}
-    unmarshalErr := json.Unmarshal(body, &currencies.Collection)
+    body, _         := ioutil.ReadAll(res.Body)
+    freshCurrencies := Currencies{}
+    unmarshalErr    := json.Unmarshal(body, &freshCurrencies.Collection)
     if unmarshalErr != nil {
         log.Fatal(unmarshalErr)
     }
 
     fmt.Println("Horus: Parsed json: ")
-    for i, curr := range currencies.Collection {
+    for i, curr := range freshCurrencies.Collection {
+        // simple stdout json formatting
         if i == 0 {
             fmt.Println("[")
         }
         fmt.Print("  ")
         _ = json.NewEncoder(os.Stdout).Encode(curr)
-        if i + 1 == len(currencies.Collection) {
+        if i + 1 == len(freshCurrencies.Collection) {
             fmt.Println("]")
         }
     }
 
-    //_ = _stdoutJSON(currencies.Collection)
+    return freshCurrencies
+
+
+
     // TODO:
     // storage device..
     // check if payload is already saved.
@@ -81,4 +97,19 @@ func requestGdaxCurrencies(path string) {
     // parse differences by currency object.
     // setup messenger lib
     // send msg with new currencies to stored emails (db!).
+}
+
+func getCachedCurrencies(path string) Currencies {
+    // defer use of a db. Just check data currencies.json file.
+    // TODO: figure out interfaces better so i can return err or nil. (?)
+    content, err := ioutil.ReadFile(path)
+    if err != nil {
+        log.Fatal(err)
+    }
+    cachedCurrencies := Currencies{}
+    unmarshalErr := json.Unmarshal(content, &cachedCurrencies.Collection)
+    if unmarshalErr != nil {
+        log.Fatal(unmarshalErr)
+    }
+    return cachedCurrencies
 }
