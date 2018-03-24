@@ -6,7 +6,7 @@ import (
     "fmt"
     "io/ioutil"
     "log"
-    "os"
+    "time"
     // local
     "horus/utils"
 )
@@ -38,24 +38,46 @@ type Currency struct {
 }
 
 type Currencies struct {
-    Collection []Currency
+    Collection  []Currency
+    CollectedOn time.Time
 }
 
+// TODO:
+// storage device..
+// check if payload is already saved.
+// no? save it. EOF
+// yes? check saved payload with new payload.
+// get difference.
+// parse differences by currency object.
+// setup messenger lib
+// send msg with new currencies to stored emails (db!).
+// update cached version!
 
 func main() {
+    // paralelize goroutines
+    proc := make(chan Currencies, 2)
+
     // freshCurrencies vs cachedCurrencies
-    _ = requestGdaxCurrencies(currenciesPath)
-    gopath := utils.GetGoPath()
-    cachedCurrencies := getCachedCurrencies(gopath + cachedCurrenciesPath)
-    fmt.Println("Now showing cached ones...")
-    json.NewEncoder(os.Stdout).Encode(cachedCurrencies.Collection)
+    go requestGdaxCurrencies(currenciesPath, proc)
+    go getCachedCurrencies(utils.GetGoPath() + cachedCurrenciesPath, proc)
+
+    callCount := 0
+    for res := range proc {
+        callCount++
+        fmt.Printf("%q", res.Collection)
+        if callCount == 2 {
+            close(proc)
+        }
+    }
+
+    // _ = json.NewEncoder(os.Stdout).Encode(curr) // <- sample stdout of json
     // we only need id and/or name to check.
     // walk through each freshCurrency and check against matching pair in cached currencies. If we can't find a
     // match, we have a new currency in gdax.
 
 }
 
-func requestGdaxCurrencies(path string) Currencies {
+func requestGdaxCurrencies(path string, proc chan<- Currencies) {
     fmt.Printf("Horus: Requesting %s...\n", path)
     res, getErr := http.Get(gdaxUrl + path)
     if getErr != nil {
@@ -65,51 +87,31 @@ func requestGdaxCurrencies(path string) Currencies {
     defer res.Body.Close()
 
     body, _         := ioutil.ReadAll(res.Body)
-    freshCurrencies := Currencies{}
+    freshCurrencies := Currencies{CollectedOn: time.Now()}
     unmarshalErr    := json.Unmarshal(body, &freshCurrencies.Collection)
     if unmarshalErr != nil {
         log.Fatal(unmarshalErr)
     }
 
-    fmt.Println("Horus: Parsed json: ")
-    for i, curr := range freshCurrencies.Collection {
-        // simple stdout json formatting
-        if i == 0 {
-            fmt.Println("[")
-        }
-        fmt.Print("  ")
-        _ = json.NewEncoder(os.Stdout).Encode(curr)
-        if i + 1 == len(freshCurrencies.Collection) {
-            fmt.Println("]")
-        }
-    }
-
-    return freshCurrencies
+    proc<- freshCurrencies
 
 
 
-    // TODO:
-    // storage device..
-    // check if payload is already saved.
-    // no? save it. EOF
-    // yes? check saved payload with new payload.
-    // get difference.
-    // parse differences by currency object.
-    // setup messenger lib
-    // send msg with new currencies to stored emails (db!).
 }
 
-func getCachedCurrencies(path string) Currencies {
+func getCachedCurrencies(path string, proc chan<- Currencies) {
     // defer use of a db. Just check data currencies.json file.
     // TODO: figure out interfaces better so i can return err or nil. (?)
+    fmt.Println("Horus: Reading cached currencies ...")
     content, err := ioutil.ReadFile(path)
     if err != nil {
         log.Fatal(err)
     }
+    // todo we probably do need a store to write time of caching.
     cachedCurrencies := Currencies{}
     unmarshalErr := json.Unmarshal(content, &cachedCurrencies.Collection)
     if unmarshalErr != nil {
         log.Fatal(unmarshalErr)
     }
-    return cachedCurrencies
+    proc<- cachedCurrencies
 }
