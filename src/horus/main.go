@@ -55,7 +55,8 @@ type Currencies struct {
 // - Logger util for prefixing stdout output with `Horus:`.
 // - Use cli args to pass duration.
 // - Write tests.
-// - Abstract calls to exchange(s).
+// - Abstract http calls to exchange(s).
+// - Move Currency types to it's own import.
 
 func main() {
 	// use a ticker for this long running interval process
@@ -129,12 +130,12 @@ func checkIfNewCurrencyFound(cachedCurrencies *Currencies, freshCurrencies *Curr
 	if !found {
 		// we SHOULD have picked up a currency so obviously something went horribly wrong...
 		log.Fatal("Yeah dawg the `findNewlyAddedCurrency function is not working properly...`")
-		os.Exit(1)
 	}
 	return newCurrency, true
 }
 
 // TODO: write tests - and more so this method.
+// A cleaner implementation would be to convert the structs to maps and then substract key/value pairs (? maybe).
 func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Currencies) (Currency, bool) {
 	// O + n^2
 	var freshCurrency, cachedCurrency Currency
@@ -162,7 +163,6 @@ func requestGdaxCurrencies(path string, proc chan<- Currencies) {
 	res, getErr := http.Get(gdaxUrl + path)
 	if getErr != nil {
 		log.Fatal(getErr)
-		os.Exit(1)
 		// what to do..
 	}
 	defer res.Body.Close()
@@ -172,7 +172,6 @@ func requestGdaxCurrencies(path string, proc chan<- Currencies) {
 	unmarshalErr := json.Unmarshal(body, &freshCurrencies.Collection)
 	if unmarshalErr != nil {
 		log.Fatal(unmarshalErr)
-		os.Exit(1)
 	}
 
 	proc <- freshCurrencies
@@ -191,7 +190,6 @@ func getCachedCurrencies(path string, proc chan<- Currencies) {
 	unmarshalErr := json.Unmarshal(content, &cachedCurrencies.Collection)
 	if unmarshalErr != nil {
 		log.Fatal(unmarshalErr)
-		os.Exit(1)
 	}
 	proc <- cachedCurrencies
 }
