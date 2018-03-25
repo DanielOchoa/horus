@@ -2,13 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"horus/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -58,6 +58,7 @@ type Currencies struct {
 // - Write tests.
 // - Abstract http calls to exchange(s).
 // - Move Currency types to it's own import.
+// - Abstract flags into it's own flag composer(?).
 
 // main here works as a never ending process. The only reason it ends is because:
 // a) there was an error.
@@ -66,23 +67,20 @@ type Currencies struct {
 // mechanism to which maintains the process running indefinitely.
 
 func main() {
-	var timeInSeconds time.Duration
-	if len(os.Args) > 1 {
-		argStr, err := strconv.Atoi(os.Args[1])
-		if err != nil {
-			log.Fatal(err)
-		}
-		timeInSeconds = time.Duration(argStr)
-	} else {
-		timeInSeconds = time.Duration(defaultIntervalSecs)
-	}
+	// setup cli flags
+	var tickerTime int
+	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
+	flag.Parse()
 
-	ticker := time.NewTicker(time.Second * timeInSeconds)
+	ticker := time.NewTicker(time.Second * time.Duration(tickerTime))
 	go func() {
 		go launchGDAXCurrencyCheck() // launch first..
-		fmt.Printf("Horus has been initiated with a ticker of %d seconds...\n", int(timeInSeconds))
+		fmt.Printf("Horus: Horus has been initiated with a ticker of %d seconds...\n", tickerTime)
 		for range ticker.C {
-			fmt.Printf("Horus: Launching currency check. Current time: %s\n", time.Now().Format(time.RFC1123))
+			fmt.Println("Horus:")
+			fmt.Printf("Horus: Running currency check...\n")
+			fmt.Printf("Horus: Current time: %s\n", time.Now().Format(time.RFC1123))
+			fmt.Println("Horus:")
 			go launchGDAXCurrencyCheck()
 		}
 	}()
@@ -122,7 +120,6 @@ func launchGDAXCurrencyCheck() {
 		os.Exit(0)
 	} else {
 		fmt.Println("Horus: No new currencies found. Checking back later...")
-		fmt.Println()
 	}
 }
 
@@ -174,7 +171,6 @@ func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Curre
 }
 
 func requestGdaxCurrencies(path string, proc chan<- Currencies) {
-	fmt.Printf("Horus: Requesting %s...\n", path)
 	res, getErr := http.Get(gdaxUrl + path)
 	if getErr != nil {
 		log.Fatal(getErr)
@@ -195,7 +191,6 @@ func requestGdaxCurrencies(path string, proc chan<- Currencies) {
 func getCachedCurrencies(path string, proc chan<- Currencies) {
 	// defer use of a db. Just check data currencies.json file.
 	// TODO: figure out interfaces better so i can return err or nil. (?)
-	fmt.Println("Horus: Reading cached currencies ...")
 	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
