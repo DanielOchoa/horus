@@ -51,15 +51,11 @@ type Currencies struct {
 }
 
 // TODO:
-// storage device..
-// check if payload is already saved.
-// no? save it. EOF
-// yes? check saved payload with new payload.
-// get difference.
-// parse differences by currency object.
-// setup messenger lib
-// send msg with new currencies to stored emails (db!).
-// update cached version!
+// - Implement twilio messaging.
+// - Logger util for prefixing stdout output with `Horus:`.
+// - Use cli args to pass duration.
+// - Write tests.
+// - Abstract calls to exchange(s).
 
 func main() {
     // use a ticker for this long running interval process
@@ -67,7 +63,8 @@ func main() {
     timeInSeconds := time.Duration(10)
     ticker := time.NewTicker(time.Second * timeInSeconds)
     go func() {
-        fmt.Printf("Horus has been initiated. The first ticker will start in %d seconds...\n", int(timeInSeconds))
+        go launchGDAXCurrencyCheck() // launch first..
+        fmt.Printf("Horus has been initiated with a ticker on %d seconds...\n", int(timeInSeconds))
         for range ticker.C {
             fmt.Printf("Horus: Launching currency check. Current time: %s\n", time.Now().Format(time.RFC1123))
             go launchGDAXCurrencyCheck()
@@ -109,6 +106,7 @@ func launchGDAXCurrencyCheck() {
         os.Exit(0)
     } else {
         fmt.Println("Horus: No new currencies found. Checking back later...")
+        fmt.Println()
     }
 }
 
@@ -136,7 +134,7 @@ func checkIfNewCurrencyFound(cachedCurrencies *Currencies, freshCurrencies *Curr
     return newCurrency, true
 }
 
-// TODO: write tests for this!
+// TODO: write tests - and more so this method.
 func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Currencies) (Currency, bool) {
     // O + n^2
     var freshCurrency, cachedCurrency Currency
