@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -28,9 +29,9 @@ const (
 	gdaxUrl              = "https://api.gdax.com"
 	currenciesPath       = "/currencies"
 	cachedCurrenciesPath = "/data/currencies.json"
-	// for cache vs fresh request
-	freshData  = "fresh_data"
-	cachedData = "cached_data"
+	freshData            = "fresh_data"
+	cachedData           = "cached_data"
+	defaultIntervalSecs  = 600
 )
 
 //
@@ -53,15 +54,29 @@ type Currencies struct {
 // TODO:
 // - Implement twilio messaging.
 // - Logger util for prefixing stdout output with `Horus:`.
-// - Use cli args to pass duration.
+// - ~Use cli args to pass duration.~
 // - Write tests.
 // - Abstract http calls to exchange(s).
 // - Move Currency types to it's own import.
 
+// main here works as a never ending process. The only reason it ends is because:
+// a) there was an error.
+// b) We successfully found a new currency.
+// The actual work is done inside a ticker interval anonymous function and the last part of main entails the
+// mechanism to which maintains the process running indefinitely.
+
 func main() {
-	// use a ticker for this long running interval process
-	// TODO Make time in seconds a cli arg
-	timeInSeconds := time.Duration(10)
+	var timeInSeconds time.Duration
+	if len(os.Args) > 1 {
+		argStr, err := strconv.Atoi(os.Args[1])
+		if err != nil {
+			log.Fatal(err)
+		}
+		timeInSeconds = time.Duration(argStr)
+	} else {
+		timeInSeconds = time.Duration(defaultIntervalSecs)
+	}
+
 	ticker := time.NewTicker(time.Second * timeInSeconds)
 	go func() {
 		go launchGDAXCurrencyCheck() // launch first..
