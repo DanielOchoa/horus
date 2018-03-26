@@ -175,8 +175,8 @@ func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Curre
 func requestGdaxCurrencies(path string, proc chan<- Currencies) {
 	res, getErr := http.Get(gdaxUrl + path)
 	if getErr != nil {
-		log.Fatal(getErr)
-		// what to do..
+		fmt.Printf("Horus: WARNING - HTTP request error: %q\n", getErr)
+		return
 	}
 	defer res.Body.Close()
 
