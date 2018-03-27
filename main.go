@@ -115,8 +115,7 @@ func launchGDAXCurrencyCheck() {
 		}
 	}
 
-	newCurrency, found := checkIfNewCurrencyFound(&cachedCurrencies, &freshCurrencies)
-	if found {
+	if newCurrency, found := checkIfNewCurrencyFound(&cachedCurrencies, &freshCurrencies); found {
 		sendTwilioMessage(&newCurrency)
 		// TODO: Make it so we don't need to kill the main goroutine - or at least make it
 		// so we don't exit the goroutine until the message has been sent.
