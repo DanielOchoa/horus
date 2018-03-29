@@ -116,20 +116,17 @@ func launchGDAXCurrencyCheck() {
 	}
 
 	if newCurrency, found := checkIfNewCurrencyFound(&cachedCurrencies, &freshCurrencies); found {
-		sendTwilioMessage(&newCurrency)
+		fmt.Printf("Horus: sending notification that currency: %+v was just added..", newCurrency)
+		msg := fmt.Sprintf("Horus here.\nGDAX has posted a new coin!\n\nid: %s\nname: %s\n\nEnjoy!", newCurrency.Id, newCurrency.Name)
+
+		twilio.SendMessage(1111111111, msg)
+
 		// TODO: Make it so we don't need to kill the main goroutine - or at least make it
 		// so we don't exit the goroutine until the message has been sent.
 		os.Exit(0)
 	} else {
 		fmt.Println("Horus: No new currencies found. Checking back later...")
 	}
-}
-
-func sendTwilioMessage(newCurrency *Currency) {
-	// TODO: Implement this function and exit process entirely once it ocurs
-	fmt.Printf("Horus: sending notification that currency: %+v was just added..", newCurrency)
-	msg := fmt.Sprintf("Horus here.\nGDAX has posted a new coin!\n\nid: %s\nname: %s\n\nEnjoy!", newCurrency.Id, newCurrency.Name)
-	twilio.SendMessage(9154492667, msg)
 }
 
 func checkIfNewCurrencyFound(cachedCurrencies *Currencies, freshCurrencies *Currencies) (Currency, bool) {
