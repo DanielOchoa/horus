@@ -133,13 +133,13 @@ func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	}
 
 	if newCurrency, found := checkIfNewCurrencyFound(&cachedCurrencies, &freshCurrencies); found {
-		fmt.Printf("Horus: sending notification that currency: %+v was just added..", newCurrency)
-		msg := fmt.Sprintf("Horus here.\nGDAX has posted a new coin!\n\nid: %s\nname: %s\n\nEnjoy!", newCurrency.Id, newCurrency.Name)
+		fmt.Printf("Horus: sending notification that currency: %+v was just added..\n", newCurrency)
 
+		msg := fmt.Sprintf("Horus here.\nGDAX has posted a new coin!\n\nid: %s\nname: %s\n\nEnjoy!", newCurrency.Id, newCurrency.Name)
 		toNumber := os.Getenv("TWILIO_TO_NUMBER")
 		twilio.SendMessage(toNumber, msg)
-		os.Exit(0)
 
+		os.Exit(0)
 	}
 
 	fmt.Println("Horus: No new currencies found. Checking back later...")

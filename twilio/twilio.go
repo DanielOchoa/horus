@@ -47,6 +47,6 @@ func SendMessage(phoneNumber string, message string, options ...interface{}) (ma
 		}
 		return nil, err
 	}
-	fmt.Printf("Horus: Twilio responded with status: %q", resp.Status)
+	fmt.Printf("Horus: Twilio responded with status: %q\n", resp.Status)
 	return nil, errors.New(fmt.Sprintf("Horus: !Whops, request failed -- %q", resp.Status))
 }
