@@ -1,11 +1,11 @@
 # HORUS
 
-Horus eye watches all...
+Horus is a platform to automate various tasks for crypto day trading.
 
-## Episode 1
+## Step 1
 
- - Setup main to ping `gdax/currencies` api to see if a new cryptocurrency has been added and notify you by msn
-     whenever this occurs.
+Build a script that pings GDAX currencies endpoint to see if a new cryptocurrency has been added to their platform.
+If so, notify me by msn when this occurs. The script will run this check every 10 minutes by default.
 
 More features coming soon.
 
@@ -13,13 +13,14 @@ More features coming soon.
 
 You'll need go installed.
 
-`go run main.go -time 600`
+`go run main.go -time 10`
 
 #### Script arguments
 
- - The `time` argument is optional and it specifies the interval time in seconds between api hits.
+ - The `time` argument is optional and it specifies the interval time in seconds between every currency endpoint
+     check vs a local cached copy of it.
  - The `cachedCurrenciesPath` is optional. It defaults to the path of `/data/currencies.json`. Useful if you want to
-test with a modified json file in order to functionally test the script works.
+     test with a modified json file in order to functionally test the script will work when needed.
 
 ### Running all tests
 
