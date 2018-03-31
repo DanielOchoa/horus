@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/DanielOchoa/horus/config"
+	"github.com/DanielOchoa/horus/twilio"
 	"github.com/joho/godotenv"
-	"horus/config"
-	"horus/twilio"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -70,8 +70,9 @@ type Currencies struct {
 func main() {
 	// env vars settup
 	// TODO: Abstract this so it can also be used in tests.
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+	envPath := config.GetGoPath() + config.GetProjectPath() + "/.env"
+	if err := godotenv.Load(envPath); err != nil {
+		log.Fatal(err)
 	}
 
 	// setup cli flags. See func definition for flag options.
@@ -102,7 +103,7 @@ func SetupFlags() (int, string) {
 	var cachedCurrenciesPath string
 
 	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
-	flag.StringVar(&cachedCurrenciesPath, "cachedCurrenciesPath", os.Getenv("CACHED_DATA_PATH"), "Location of cached json data.")
+	flag.StringVar(&cachedCurrenciesPath, "cached-currencies-path", os.Getenv("CACHED_DATA_PATH"), "Location of cached json data.")
 	flag.Parse()
 	return tickerTime, cachedCurrenciesPath
 }

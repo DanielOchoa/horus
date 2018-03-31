@@ -3,7 +3,8 @@ package config
 import "strings"
 import "os"
 
-const projectPath = "/src/horus"
+// TODO - it could be `pkg` instead of `src` so, add that check to `GetProjectPath`.
+const projectPath = "/src/github.com/DanielOchoa/horus"
 
 func GetProjectPath() string {
 	return projectPath
