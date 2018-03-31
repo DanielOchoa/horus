@@ -14,7 +14,16 @@ More features coming soon.
 You'll need go installed.
 
 `go run main.go -time 600`
-the `time` argument is optional and it specifies the interval time in seconds between api hits.
+
+#### Script arguments
+
+ - The `time` argument is optional and it specifies the interval time in seconds between api hits.
+ - The `cachedCurrenciesPath` is optional. It defaults to the path of `/data/currencies.json`. Useful if you want to
+test with a modified json file in order to functionally test the script works.
+
+### Running all tests
+
+`go test ./...`. Note that while it runs all tests, it also runs dependencies test (or all packages in your `go/src` location for that matter).
 
 ## Author
 

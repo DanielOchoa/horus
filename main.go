@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/joho/godotenv"
+	"horus/config"
 	"horus/twilio"
-	"horus/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,12 +28,12 @@ import (
 // match, we have a new currency in gdax.
 
 const (
-	gdaxUrl              = "https://api.gdax.com"
-	currenciesPath       = "/currencies"
-	cachedCurrenciesPath = "/src/horus/data/currencies.json"
-	freshData            = "fresh_data"
-	cachedData           = "cached_data"
-	defaultIntervalSecs  = 600
+	gdaxUrl                     = "https://api.gdax.com"
+	currenciesPath              = "/currencies"
+	defaultCachedCurrenciesPath = "/src/horus/data/currencies.json"
+	freshData                   = "fresh_data"
+	cachedData                  = "cached_data"
+	defaultIntervalSecs         = 600
 )
 
 //
@@ -68,21 +69,26 @@ type Currencies struct {
 // mechanism to which maintains the process running indefinitely.
 
 func main() {
-	// setup cli flags
-	var tickerTime int
-	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
-	flag.Parse()
+	// env vars settup
+	// TODO: Abstract this so it can also be used in tests.
+	if err := godotenv.Load(); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	// setup cli flags. See func definition for flag options.
+	tickerTime, cachedCurrenciesPath := SetupFlags()
 
 	ticker := time.NewTicker(time.Second * time.Duration(tickerTime))
+
 	go func() {
-		go launchGDAXCurrencyCheck() // launch first..
+		go launchGDAXCurrencyCheck(cachedCurrenciesPath) // launch first..
 		fmt.Printf("Horus: Horus has been initiated with a ticker of %d seconds...\n", tickerTime)
 		for range ticker.C {
 			fmt.Println("Horus:")
 			fmt.Printf("Horus: Running currency check...\n")
 			fmt.Printf("Horus: Current time: %s\n", time.Now().Format(time.RFC1123))
 			fmt.Println("Horus:")
-			go launchGDAXCurrencyCheck()
+			go launchGDAXCurrencyCheck(cachedCurrenciesPath)
 		}
 	}()
 
@@ -91,13 +97,24 @@ func main() {
 	<-keepRunning
 }
 
-func launchGDAXCurrencyCheck() {
+// Sets up default flag arguments.
+func SetupFlags() (int, string) {
+	var tickerTime int
+	var cachedCurrenciesPath string
+
+	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
+	flag.StringVar(&cachedCurrenciesPath, "cachedCurrenciesPath", defaultCachedCurrenciesPath, "Location of cached json data.")
+	flag.Parse()
+	return tickerTime, cachedCurrenciesPath
+}
+
+func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	// paralelize goroutines
 	proc := make(chan Currencies, 2)
 
 	// freshCurrencies vs cachedCurrencies
 	go requestGdaxCurrencies(currenciesPath, proc)
-	go getCachedCurrencies(utils.GetGoPath()+cachedCurrenciesPath, proc)
+	go getCachedCurrencies(config.GetGoPath()+cachedCurrenciesPath, proc)
 
 	var callCount int
 	var cachedCurrencies, freshCurrencies Currencies
@@ -119,14 +136,13 @@ func launchGDAXCurrencyCheck() {
 		fmt.Printf("Horus: sending notification that currency: %+v was just added..", newCurrency)
 		msg := fmt.Sprintf("Horus here.\nGDAX has posted a new coin!\n\nid: %s\nname: %s\n\nEnjoy!", newCurrency.Id, newCurrency.Name)
 
-		twilio.SendMessage(1111111111, msg)
-
-		// TODO: Make it so we don't need to kill the main goroutine - or at least make it
-		// so we don't exit the goroutine until the message has been sent.
+		toNumber := os.Getenv("TWILIO_TO_NUMBER")
+		twilio.SendMessage(toNumber, msg)
 		os.Exit(0)
-	} else {
-		fmt.Println("Horus: No new currencies found. Checking back later...")
+
 	}
+
+	fmt.Println("Horus: No new currencies found. Checking back later...")
 }
 
 func checkIfNewCurrencyFound(cachedCurrencies *Currencies, freshCurrencies *Currencies) (Currency, bool) {

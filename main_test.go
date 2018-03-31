@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"flag"
+	"os"
+	"testing"
+)
 
 func TestFindNewlyAddedCurrency(t *testing.T) {
 	btc := &Currency{
@@ -42,4 +46,10 @@ func TestFindNewlyAddedCurrency(t *testing.T) {
 	if newCurrency.Id != "" {
 		t.Error("Expect `newCurrency.Id` to be empty.")
 	}
+}
+
+// TODO: Figure out how to test with currencies_test.json.
+func TestMain(m *testing.M) {
+	flag.Parse()
+	os.Exit(m.Run())
 }

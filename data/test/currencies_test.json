@@ -1,0 +1,44 @@
+[
+  {
+    "id": "BTC",
+    "name": "Bitcoin",
+    "min_size": "0.00000001",
+    "status": "online",
+    "message": null
+  },
+  {
+    "id": "EUR",
+    "name": "Euro",
+    "min_size": "0.01000000",
+    "status": "online",
+    "message": null
+  },
+  {
+    "id": "LTC",
+    "name": "Litecoin",
+    "min_size": "0.00000001",
+    "status": "online",
+    "message": null
+  },
+  {
+    "id": "GBP",
+    "name": "British Pound",
+    "min_size": "0.01000000",
+    "status": "online",
+    "message": null
+  },
+  {
+    "id": "USD",
+    "name": "United States Dollar",
+    "min_size": "0.01000000",
+    "status": "online",
+    "message": null
+  },
+  {
+    "id": "BCH",
+    "name": "Bitcoin Cash",
+    "min_size": "0.00000001",
+    "status": "online",
+    "message": null
+  }
+]
