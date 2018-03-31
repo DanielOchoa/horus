@@ -11,9 +11,18 @@ More features coming soon.
 
 ### Running
 
-You'll need go installed.
+You'll need go installed, then run `go build` on the project's root directory.
 
-`go run main.go -time 10`
+To run: `go run main.go -time 10`
+
+The project depends on a `.env` and `.env.test` file for running tests. It needs the following settings:
+```
+TWILIO_ACCOUNT_SID="xxx"
+TWILIO_AUTH_TOKEN="xxx"
+TWILIO_FROM_NUMBER="+1xxx"
+TWILIO_TO_NUMBER="+1xxx"
+CACHED_DATA_PATH="/src/horus/data/currencies.json"
+```
 
 #### Script arguments
 

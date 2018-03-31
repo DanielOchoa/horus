@@ -28,12 +28,11 @@ import (
 // match, we have a new currency in gdax.
 
 const (
-	gdaxUrl                     = "https://api.gdax.com"
-	currenciesPath              = "/currencies"
-	defaultCachedCurrenciesPath = "/src/horus/data/currencies.json"
-	freshData                   = "fresh_data"
-	cachedData                  = "cached_data"
-	defaultIntervalSecs         = 600
+	gdaxUrl             = "https://api.gdax.com"
+	currenciesPath      = "/currencies"
+	freshData           = "fresh_data"
+	cachedData          = "cached_data"
+	defaultIntervalSecs = 600
 )
 
 //
@@ -103,7 +102,7 @@ func SetupFlags() (int, string) {
 	var cachedCurrenciesPath string
 
 	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
-	flag.StringVar(&cachedCurrenciesPath, "cachedCurrenciesPath", defaultCachedCurrenciesPath, "Location of cached json data.")
+	flag.StringVar(&cachedCurrenciesPath, "cachedCurrenciesPath", os.Getenv("CACHED_DATA_PATH"), "Location of cached json data.")
 	flag.Parse()
 	return tickerTime, cachedCurrenciesPath
 }
