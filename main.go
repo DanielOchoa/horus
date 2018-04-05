@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/DanielOchoa/horus/config"
 	"github.com/DanielOchoa/horus/twilio"
@@ -28,11 +27,10 @@ import (
 // match, we have a new currency in gdax.
 
 const (
-	gdaxUrl             = "https://api.gdax.com"
-	currenciesPath      = "/currencies"
-	freshData           = "fresh_data"
-	cachedData          = "cached_data"
-	defaultIntervalSecs = 600
+	gdaxUrl        = "https://api.gdax.com"
+	currenciesPath = "/currencies"
+	freshData      = "fresh_data"
+	cachedData     = "cached_data"
 )
 
 //
@@ -68,44 +66,29 @@ type Currencies struct {
 // mechanism to which maintains the process running indefinitely.
 
 func main() {
-	// env vars settup
-	// TODO: Abstract this so it can also be used in tests.
-	envPath := config.GetGoPath() + config.GetProjectPath() + "/.env"
+
+	// .env file parsing into environment variables.
+	envPath := config.GetFullProjectPath() + "/.env"
 	if err := godotenv.Load(envPath); err != nil {
 		log.Fatal(err)
 	}
 
-	// setup cli flags. See func definition for flag options.
-	tickerTime, cachedCurrenciesPath := SetupFlags()
+	// setup cli flags. See func definition for flag options. Run `horus -h` to see options.
+	tickerTime, cachedCurrenciesPath := config.SetupFlags()
 
 	ticker := time.NewTicker(time.Second * time.Duration(tickerTime))
 
-	go func() {
-		go launchGDAXCurrencyCheck(cachedCurrenciesPath) // launch first..
-		fmt.Printf("Horus: Horus has been initiated with a ticker of %d seconds...\n", tickerTime)
-		for range ticker.C {
-			fmt.Println("Horus:")
-			fmt.Printf("Horus: Running currency check...\n")
-			fmt.Printf("Horus: Current time: %s\n", time.Now().Format(time.RFC1123))
-			fmt.Println("Horus:")
-			go launchGDAXCurrencyCheck(cachedCurrenciesPath)
-		}
-	}()
+	go launchGDAXCurrencyCheck(cachedCurrenciesPath) // launch first..
 
-	// prevent this process from ending.
-	keepRunning := make(chan interface{})
-	<-keepRunning
-}
+	fmt.Printf("Horus: Horus has been initiated with a ticker of %d seconds...\n", tickerTime)
 
-// Sets up default flag arguments.
-func SetupFlags() (int, string) {
-	var tickerTime int
-	var cachedCurrenciesPath string
-
-	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
-	flag.StringVar(&cachedCurrenciesPath, "cached-currencies-path", os.Getenv("CACHED_DATA_PATH"), "Location of cached json data.")
-	flag.Parse()
-	return tickerTime, cachedCurrenciesPath
+	for range ticker.C {
+		fmt.Println("Horus:")
+		fmt.Printf("Horus: Running currency check...\n")
+		fmt.Printf("Horus: Current time: %s\n", time.Now().Format(time.RFC1123))
+		fmt.Println("Horus:")
+		go launchGDAXCurrencyCheck(cachedCurrenciesPath)
+	}
 }
 
 func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
@@ -116,6 +99,8 @@ func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	go requestGdaxCurrencies(currenciesPath, proc)
 	go getCachedCurrencies(config.GetGoPath()+cachedCurrenciesPath, proc)
 
+	// "there's gotta be a better way to manage channels"
+	//											- Ice Cube
 	var callCount int
 	var cachedCurrencies, freshCurrencies Currencies
 	for currencies := range proc {

@@ -2,9 +2,18 @@ package config
 
 import "strings"
 import "os"
+import "flag"
 
 // TODO - it could be `pkg` instead of `src` so, add that check to `GetProjectPath`.
-const projectPath = "/src/github.com/DanielOchoa/horus"
+
+const (
+	projectPath         = "/src/github.com/DanielOchoa/horus"
+	defaultIntervalSecs = 600
+)
+
+func GetFullProjectPath() string {
+	return GetGoPath() + GetProjectPath()
+}
 
 func GetProjectPath() string {
 	return projectPath
@@ -25,4 +34,15 @@ func GetGoPath() string {
 		return paths[0]
 	}
 	return os.Getenv("GOPATH")
+}
+
+// Sets up default flag arguments.
+func SetupFlags() (int, string) {
+	var tickerTime int
+	var cachedCurrenciesPath string
+
+	flag.IntVar(&tickerTime, "time", defaultIntervalSecs, "Time in seconds for the GDAX check to trigger itself.")
+	flag.StringVar(&cachedCurrenciesPath, "cached-currencies-path", os.Getenv("CACHED_DATA_PATH"), "Location of cached json data.")
+	flag.Parse()
+	return tickerTime, cachedCurrenciesPath
 }

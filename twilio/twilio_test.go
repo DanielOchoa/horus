@@ -8,7 +8,7 @@ import "github.com/DanielOchoa/horus/config"
 // Notice use of .env.test file for twilio test credentials (no msn sent out)
 // TODO: Change function so we pass the http client so we can stub it out.
 func TestSendMessage(t *testing.T) {
-	envPath := config.GetGoPath() + config.GetProjectPath() + "/.env.test"
+	envPath := config.GetFullProjectPath() + "/.env.test"
 	if err := godotenv.Load(envPath); err != nil {
 		t.Error(err)
 	}
