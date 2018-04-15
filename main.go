@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/DanielOchoa/horus/config"
+	"github.com/DanielOchoa/horus/http"
 	"github.com/DanielOchoa/horus/twilio"
 	"github.com/joho/godotenv"
 	"io/ioutil"
 	"log"
-	"net/http"
+	"net/url"
 	"os"
 	"time"
 )
@@ -28,6 +29,7 @@ import (
 
 const (
 	gdaxUrl        = "https://api.gdax.com"
+	horusUA        = "HorusApp/1.0"
 	currenciesPath = "/currencies"
 	freshData      = "fresh_data"
 	cachedData     = "cached_data"
@@ -96,7 +98,14 @@ func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	proc := make(chan Currencies, 2)
 
 	// freshCurrencies vs cachedCurrencies
-	go requestGdaxCurrencies(currenciesPath, proc)
+
+	parsedUrl, err := url.Parse(gdaxUrl)
+	if err != nil {
+		log.Fatal(err)
+	}
+	client := http.Client{BaseURL: parsedUrl, UserAgent: horusUA}
+
+	go requestGdaxCurrencies(client, currenciesPath, proc)
 	go getCachedCurrencies(config.GetGoPath()+cachedCurrenciesPath, proc)
 
 	// "there's gotta be a better way to manage channels"
@@ -171,20 +180,17 @@ func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Curre
 	return Currency{}, false
 }
 
-func requestGdaxCurrencies(path string, proc chan<- Currencies) {
-	res, getErr := http.Get(gdaxUrl + path)
-	if getErr != nil {
-		fmt.Printf("Horus: WARNING - HTTP request error: %q\n", getErr)
-		return
+func requestGdaxCurrencies(c http.Client, path string, proc chan<- Currencies) {
+	req, err := c.NewRequest("GET", path, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	freshCurrencies := Currencies{CollectionType: freshData}
+	res, err := c.Do(req, &freshCurrencies.Collection)
+	if err != nil {
+		fmt.Printf("Horus: WARNING - `Do` request error: %q\n", err)
 	}
 	defer res.Body.Close()
-
-	body, _ := ioutil.ReadAll(res.Body)
-	freshCurrencies := Currencies{CollectionType: freshData}
-	unmarshalErr := json.Unmarshal(body, &freshCurrencies.Collection)
-	if unmarshalErr != nil {
-		log.Fatal(unmarshalErr)
-	}
 
 	proc <- freshCurrencies
 }

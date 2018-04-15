@@ -12,7 +12,7 @@ import (
 
 // Send messages throught the Twilio service to any given mobile phone number.
 // TODO: Pass in http.Client so we can stub it out for testing.
-func SendMessage(phoneNumber string, message string, options ...interface{}) (map[string]interface{}, error) {
+func SendMessage(phoneNumber string, message string) (map[string]interface{}, error) {
 
 	fromNumber := os.Getenv("TWILIO_FROM_NUMBER")
 	accountSid := os.Getenv("TWILIO_ACCOUNT_SID")
