@@ -28,7 +28,7 @@ import (
 // match, we have a new currency in gdax.
 
 const (
-	gdaxUrl        = "https://api.gdax.com"
+	gdaxUrl        = "https://api.pro.coinbase.com/"
 	horusUA        = "HorusApp/1.0"
 	currenciesPath = "/currencies"
 	freshData      = "fresh_data"
@@ -95,9 +95,8 @@ func main() {
 
 func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	// paralelize goroutines
-	proc := make(chan Currencies, 2)
-
-	// freshCurrencies vs cachedCurrencies
+	freshCurrencyCheckProc := make(chan Currencies, 1)
+	cachedCurrencyFetchProc := make(chan Currencies, 1)
 
 	parsedUrl, err := url.Parse(gdaxUrl)
 	if err != nil {
@@ -105,26 +104,11 @@ func launchGDAXCurrencyCheck(cachedCurrenciesPath string) {
 	}
 	client := http.Client{BaseURL: parsedUrl, UserAgent: horusUA}
 
-	go requestGdaxCurrencies(client, currenciesPath, proc)
-	go getCachedCurrencies(config.GetGoPath()+cachedCurrenciesPath, proc)
+	go requestGdaxCurrencies(client, currenciesPath, freshCurrencyCheckProc)
+	go getCachedCurrencies(config.GetGoPath()+cachedCurrenciesPath, cachedCurrencyFetchProc)
 
-	// "there's gotta be a better way to manage channels"
-	//											- Ice Cube
-	var callCount int
-	var cachedCurrencies, freshCurrencies Currencies
-	for currencies := range proc {
-		callCount++
-		switch collectionType := currencies.CollectionType; collectionType {
-		case cachedData:
-			cachedCurrencies = currencies
-		case freshData:
-			freshCurrencies = currencies
-		}
-		// _ = json.NewEncoder(os.Stdout).Encode(currencies.Collection)
-		if callCount == 2 {
-			close(proc)
-		}
-	}
+	freshCurrencies := <-freshCurrencyCheckProc
+	cachedCurrencies := <-cachedCurrencyFetchProc
 
 	if newCurrency, found := checkIfNewCurrencyFound(&cachedCurrencies, &freshCurrencies); found {
 		fmt.Printf("Horus: sending notification that currency: %+v was just added..\n", newCurrency)
