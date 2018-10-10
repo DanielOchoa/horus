@@ -141,23 +141,16 @@ func checkIfNewCurrencyFound(cachedCurrencies *Currencies, freshCurrencies *Curr
 	return newCurrency, true
 }
 
+// Compares two different lists of Currencies, and finds the first that doesn't exist between the two lists.
+//
 // A cleaner implementation would be to convert the structs to maps and then substract key/value pairs (? maybe).
 func findNewlyAddedCurrency(cachedCurrencies *Currencies, freshCurrencies *Currencies) (Currency, bool) {
-	// O + n^2
-	var freshCurrency, cachedCurrency Currency
-	var isThisNew bool
-	for i := 0; i < len(freshCurrencies.Collection); i++ {
-		freshCurrency = freshCurrencies.Collection[i]
-		isThisNew = true
-		for j := 0; j < len(cachedCurrencies.Collection); j++ {
-			cachedCurrency = cachedCurrencies.Collection[j]
-			// if there is no match between fresh and cached here, it means that is the new currency.
-			if freshCurrency.Id == cachedCurrency.Id {
-				isThisNew = false
-				break
-			}
-		}
-		if isThisNew {
+	cachedCurrenciesMap := make(map[Currency]bool)
+	for _, cachedCurrency := range cachedCurrencies.Collection {
+		cachedCurrenciesMap[cachedCurrency] = true
+	}
+	for _, freshCurrency := range freshCurrencies.Collection {
+		if _, ok := cachedCurrenciesMap[freshCurrency]; !ok {
 			return freshCurrency, true
 		}
 	}
